@@ -45,7 +45,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
           <div>
             <p className="text-xs text-grey">น้ำหนัก</p>
             <p className="text-sm font-semibold text-gray-700">
-              {order.washKg} ซัก / {order.dryKg} อบ
+              ซัก {order.washKg} KG / อบ {order.dryKg} KG
             </p>
           </div>
         </div>

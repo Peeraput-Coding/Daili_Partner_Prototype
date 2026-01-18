@@ -74,6 +74,61 @@ const PolicyModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   );
 };
 
+const NotificationModal = ({ isOpen, onClose, notifications, onReadAll, hasUnread }: { isOpen: boolean; onClose: () => void; notifications: any[]; onReadAll: () => void; hasUnread: boolean }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="relative bg-white rounded-[24px] w-full max-w-sm shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[70vh]">
+         {/* Header */}
+         <div className="p-5 border-b border-gray-50 bg-soft-blue/30 flex justify-between items-center shrink-0">
+            <h3 className="font-bold text-gray-800 flex items-center gap-2 text-lg">
+                <Bell size={20} className="text-primary fill-current"/> การแจ้งเตือน
+            </h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 bg-white/50 p-1 rounded-full"><X size={20}/></button>
+         </div>
+         
+         {/* List */}
+         <div className="overflow-y-auto p-0 flex-1">
+            {notifications.length > 0 ? (
+                notifications.map((notif) => (
+                    <div key={notif.id} className="p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer group">
+                        <div className="flex items-start gap-4">
+                            <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm ${notif.type === 'success' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                            <div>
+                                <p className="text-sm font-bold text-gray-800 group-hover:text-primary transition-colors">{notif.title}</p>
+                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{notif.message}</p>
+                                <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+                                    <Clock size={10} /> {notif.time}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                ))
+            ) : (
+                <div className="p-10 text-center text-gray-400">
+                    <Bell size={40} className="mx-auto mb-3 opacity-20" />
+                    <p>ไม่มีการแจ้งเตือนใหม่</p>
+                </div>
+            )}
+         </div>
+
+         {/* Footer */}
+         {hasUnread && notifications.length > 0 && (
+             <div className="p-4 border-t border-gray-50 bg-gray-50 text-center shrink-0">
+                <button 
+                    onClick={onReadAll}
+                    className="text-sm text-primary font-bold hover:underline"
+                >
+                    ทำเครื่องหมายว่าอ่านแล้วทั้งหมด
+                </button>
+             </div>
+         )}
+      </div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 function App() {
@@ -106,16 +161,13 @@ function App() {
 
   // Refs for click outside closing
   const profileRef = useRef<HTMLDivElement>(null);
-  const notifRef = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
       }
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-        setIsNotifOpen(false);
-      }
+      // Notif modal handles backdrop click itself, no ref needed for dropdown anymore
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -128,7 +180,7 @@ function App() {
 
   const handleReadAllNotifs = () => {
       setHasUnreadNotifs(false);
-      // setIsNotifOpen(false); // Optional: close on read all
+      setIsNotifOpen(false); // Close on read all for better UX in modal mode
   };
 
   // --- DASHBOARD LOGIC START ---
@@ -348,10 +400,10 @@ function App() {
                <Search className="absolute left-3.5 top-2.5 text-blue-300" size={18} />
             </div>
 
-            {/* Notifications */}
-            <div className="relative" ref={notifRef}>
+            {/* Notifications Button (Modified to open Modal) */}
+            <div className="relative">
                 <button 
-                    onClick={() => setIsNotifOpen(!isNotifOpen)}
+                    onClick={() => setIsNotifOpen(true)}
                     className="relative p-2.5 bg-white rounded-full border border-gray-100 shadow-sm hover:shadow-md transition-all text-grey hover:text-primary"
                 >
                     <Bell size={20} />
@@ -359,34 +411,7 @@ function App() {
                         <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
                     )}
                 </button>
-
-                {isNotifOpen && (
-                    <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in z-50">
-                        <div className="p-4 border-b border-gray-50 bg-soft-blue/30 flex justify-between items-center">
-                            <h3 className="font-bold text-gray-800">การแจ้งเตือน</h3>
-                            <button 
-                                onClick={handleReadAllNotifs}
-                                className="text-xs text-primary font-medium cursor-pointer hover:underline"
-                            >
-                                อ่านทั้งหมด
-                            </button>
-                        </div>
-                        <div className="max-h-[300px] overflow-y-auto">
-                            {MOCK_NOTIFICATIONS.map((notif) => (
-                                <div key={notif.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
-                                    <div className="flex items-start gap-3">
-                                        <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${notif.type === 'success' ? 'bg-green-500' : 'bg-blue-500'}`} />
-                                        <div>
-                                            <p className="text-sm font-bold text-gray-800">{notif.title}</p>
-                                            <p className="text-xs text-gray-500 mt-1">{notif.message}</p>
-                                            <p className="text-[10px] text-gray-400 mt-2">{notif.time}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* Dropdown content removed from here */}
             </div>
             
             {/* Profile Dropdown */}
@@ -446,7 +471,8 @@ function App() {
                         <h2 className="text-xl font-bold text-gray-800">ภาพรวมรายรับ</h2>
                         <p className="text-sm text-grey">ข้อมูลสรุปผลการดำเนินงานของร้าน (แสดงข้อมูลตามช่วงเวลาที่เลือก)</p>
                     </div>
-                    <div className="flex gap-2 items-center bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+                    {/* Fixed alignment: ml-auto pushes it to right on mobile (flex-col items-start) */}
+                    <div className="flex gap-2 items-center bg-white p-1 rounded-xl border border-gray-100 shadow-sm ml-auto sm:ml-0">
                         <select 
                             value={dashboardTimeRange}
                             onChange={(e) => setDashboardTimeRange(e.target.value as any)}
@@ -852,6 +878,15 @@ function App() {
             <PolicyModal 
                 isOpen={showPolicy}
                 onClose={() => setShowPolicy(false)}
+            />
+
+            {/* Added Notification Modal at the bottom */}
+            <NotificationModal 
+                isOpen={isNotifOpen}
+                onClose={() => setIsNotifOpen(false)}
+                notifications={MOCK_NOTIFICATIONS}
+                onReadAll={handleReadAllNotifs}
+                hasUnread={hasUnreadNotifs}
             />
 
           </div>
